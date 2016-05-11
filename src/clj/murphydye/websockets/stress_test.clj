@@ -44,11 +44,12 @@ from server:
   (swap! client-has-received update client-id (fn [v] (conj v seq-num))))
 
 (defn send-msg [conn msg]
-  (let [v (vec (conj (seq msg) :stress-test))]
-    (ws/send-to-connection conn v)
-    ;; (ws/send-to-connection conn (vector (seq msg :stress-test)))
-    ;; (println v)
-    ))
+  (future
+    (let [v (vec (conj (seq msg) :stress-test))]
+      (ws/send-to-connection conn v)
+      ;; (ws/send-to-connection conn (vector (seq msg :stress-test)))
+      ;; (println v)
+      )))
 
 (defn stress-test-thread [client-id conn v]
   ;; (log/info "client-id" client-id (type conn) v)
