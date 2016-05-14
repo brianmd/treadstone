@@ -33,7 +33,7 @@
 (defn new-client [m]
   (let [seq-num (swap! temp-client-seq-num inc)]
     (swap! temp-clients assoc seq-num (assoc m :id seq-num))
-    (send-msg [:websocket :new-client seq-num])))
+    (send-msg [:websocket :new-client {:seq-num seq-num}])))
 
 (defn set-client-id [temp-id id]
   (let [client (temp-clients temp-id)]
@@ -43,7 +43,7 @@
         (swap! temp-clients dissoc (:id client)))
       (throw (js/Error. (str "No such temporary client id: " temp-id))))))
 
-(defn handle-action! [action])
+(defn handle-action! [action-name m])
 
 (defn make-websocket! [url receive-handler]
   (println "attempting to connect websocket")

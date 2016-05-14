@@ -55,8 +55,7 @@ from server:
   ;; (log/info "client-id" client-id (type conn) v)
   (doseq [n v]
     (log/info "n:" n)
-    (send-msg conn [:iteration {:client-id client-id :seq-num n}]))
-    )
+    (send-msg conn [:iteration {:client-id client-id :seq-num n}])))
 
 (defn wait-for-client-to-finish [client-id start-time previous]
   (Thread/sleep 100)
@@ -102,23 +101,28 @@ from server:
       (swap! client-has-received dissoc client-id)
       (println "done"))))
 
-(map! println (lazy-seq (range 3)))
-
-(defn start-test-action-aux [state [_ m]]
+(defn start-test-action-aux [state _ m]
   (log/info "in start-test-action-aux")
   (stress-test (:client-id m) ws/*connection* (:num-threads m) (:num-iterations m)))
 
-(defn start-test-action [state action]
+(defn start-test-action [state action-name m]
   (log/info "in start-test-action")
   (log/info state)
-  (log/info action)
-  (start-test-action-aux state action))
+  (log/info action-name)
+  (start-test-action-aux state action-name m))
 
-(defn received-action [state [_ m]]
+(defn received-action [state _ m]
   (received-count (:client-id m) (:seq-num m)))
 
-(defonce stress-test-actor (r/make-actor (atom {})))
+(defn create-actor [actor-name]
+  (let [actor (r/make-router actor-name (atom {}))]
+    (add actor :start-test start-test-action)
+    (add actor :received received-action)
+    actor
+    ))
 
-(add stress-test-actor :start-test start-test-action)
-(add stress-test-actor :received received-action)
+;; (defonce stress-test-actor (r/make-actor (atom {})))
+
+;; (add stress-test-actor :start-test start-test-action)
+;; (add stress-test-actor :received received-action)
 

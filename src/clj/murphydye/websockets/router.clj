@@ -4,45 +4,45 @@
             ))
 
 (defprotocol Dispatcher
+  (act [state action-name m])
   (dispatch [this v])
   (add [this key func]))
 
 (def ^:dynamic *router-ancestors* '())
 
-(defrecord Router [routes]
+(defn plain-dispatch [this v]
+  ;; (log/info "about to dispatch in router " v)
+  (let [app-or-action-name (first v)
+        msg                (rest v)
+        command            (first msg)
+        actor?             (or (map? command) (nil? command))
+        sub-dispatcher     ((deref (:routes this)) app-or-action-name)
+        ]
+    (log/info "about to dispatch in router:" (:title this) ", app-or-action-name:" app-or-action-name ", command:" command ", msg:" msg ", actor?:" actor? ", sub-dispatcher type:" (type sub-dispatcher))
+    (if-not sub-dispatcher
+      (throw (Exception. (str "no such app-name " app-or-action-name))))
+    (binding [*router-ancestors* (conj *router-ancestors* app-or-action-name)]
+      (if actor?
+        (sub-dispatcher (:state this) app-or-action-name command)
+        (dispatch sub-dispatcher msg))
+      )))
+
+(defrecord Router [title routes state]
   Dispatcher
   (dispatch [this v]
-    (log/info "about to dispatch in router " v)
-    (let [app-name (first v)
-          sub-dispatcher ((deref (:routes this)) app-name)
-          ]
-      (if-not sub-dispatcher
-        (throw (Exception. (str "no such app-name " app-name))))
-      (binding [*router-ancestors* (conj *router-ancestors* app-name)]
-        (dispatch sub-dispatcher (rest v)))))
+    (plain-dispatch this v))
   (add [this key val]
-    (swap! routes assoc key val)))
+    (swap! routes assoc key val)
+    nil   ;; because above is not printable
+    ))
 
-(defn make-router [] (->Router (atom {})))
-
-
-
-(defrecord Actor [actions state]
-  Dispatcher
-  (dispatch [this event]
-    (log/info "Actor.dispatch " event)
-    (let [action-name (first event)
-          func ((deref (:actions this)) action-name)]
-      (if-not func
-        (throw (Exception. (str "no such action " action-name))))
-      (func state event)))
-  (add [this event-name func] (swap! (:actions this) assoc event-name func)))
-
-(defn make-actor [initial-state] (->Actor (atom {}) initial-state))
+(defn make-router
+  ([name] (make-router name nil))
+  ([name state] (->Router name (atom {}) state)))
 
 
-(def root-router (make-router))
-;; (def root-router (make-router (atom {:connections {}})))
+
+(defonce root-router (make-router "root" (atom {:connections {}})))
 
 ;; see timer.clj for example
 

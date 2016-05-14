@@ -13,9 +13,6 @@
 
 (log/info "in websockets.cljs")
 
-;; Use router from namespace. Creating one here could cause circular dependencies
-(defonce router r/root-router)
-
 (def ^:dynamic *connection* nil)
 
 (defonce connections (atom {}))
@@ -23,8 +20,8 @@
 (defonce customer-seq-num (atom 0))
 (defonce client-seq-num (atom 0))
 
-(defn websockets-info []
-  {:router r/root-router
+(defn websockets-info [router]
+  {:router router
    :connections (atom {})
    })
 
@@ -141,14 +138,19 @@
   (GET "/ws" [] ws-handler))
 
 (defn handle-new-client [])
-(defonce websockets (websockets-info))
-(defonce websocket-actor (r/make-actor (atom (websockets-info))))
-(add websocket-actor :new-client (fn [& args] (println "websocket-actor" " new-client:")))
+
+
+(defn create-actor [actor-name router]
+  (let [actor (r/make-router actor-name
+                                   (atom (websockets-info router)))]
+    (add actor :new-client (fn [& args] (println "in websocket-actor" " new-client:" )))
+    actor
+    ))
 
 (log/info "done loading websockets.cljs")
 
 
-;; auto reload from a repl but not really. But if eval in emacs, good to go
+;; auto reload from a repl would be bad. But if eval in emacs, good to go
 (log/info "(in-ns 'treadstone.core)")
 (log/info "(-main)")
 

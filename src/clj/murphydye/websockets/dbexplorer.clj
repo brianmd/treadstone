@@ -77,12 +77,12 @@ from client:
     ;; (println v)
     ))
 
-(defn databases! [_ _]
+(defn databases! [_ _ _]
   (let [d (databases)]
     (send-message :databases {:databases (databases)})))
 ;; (database-names! nil nil)
 
-(defn tables! [_ [_ m]]
+(defn tables! [_ _ m]
   (println "tables ! " m)
   (let [names (mysql-tables (:dbname m))]
     ;; (println names)
@@ -94,8 +94,16 @@ from client:
   (let [data (mysql-table (:dbname m) (:table-name m))]
     (send-message :table (assoc m :data data))))
 
-(def dbexplorer-actor (r/make-actor (atom {})))
+(defn create-actor [actor-name]
+  (let [actor (r/make-router actor-name (atom {}))]
+    (add actor :databases databases!)
+    (add actor :tables tables!)
+    (add actor :table table!)
+    actor
+    ))
 
-(add dbexplorer-actor :databases databases!)
-(add dbexplorer-actor :tables tables!)
-(add dbexplorer-actor :table table!)
+;; (def dbexplorer-actor (r/make-router "dbexplorer" (atom {})))
+
+;; (add dbexplorer-actor :databases databases!)
+;; (add dbexplorer-actor :tables tables!)
+;; (add dbexplorer-actor :table table!)

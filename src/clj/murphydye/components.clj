@@ -14,13 +14,13 @@
             ))
 
 
+
 (do
-  (r/add r/root-router :chatr chatr/chatr-actor)
-  (r/add r/root-router :stress-test stress-test/stress-test-actor)
-  (r/add r/root-router :websocket ws/websocket-actor)
-  (r/add r/root-router :dbexplorer dbexplorer/dbexplorer-actor)
-  ;; the result of the above is unable to be printed, so if want to run in a repl, need to return nil
-  nil)
+  (r/add r/root-router :websocket (ws/create-actor :websocket))
+  (r/add r/root-router :chatr (chatr/create-actor :chatr))
+  (r/add r/root-router :stress-test (stress-test/create-actor :stress-test))
+  (r/add r/root-router :dbexplorer (dbexplorer/create-actor :dbexplorer))
+  )
 
 
 (println "done loading murphydye.components")

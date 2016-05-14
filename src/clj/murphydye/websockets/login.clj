@@ -11,8 +11,8 @@
             [murphydye.websockets.core :as ws]
             ))
 
-(defn login [state [_ username pw]])
-(defn logout [state [_]])
+(defn login [state _ m])
+(defn logout [state _ m])
 ;; (defn authenticity-token [state [_]]
 ;;   (:authenticity-token *websocket-connection*))
 

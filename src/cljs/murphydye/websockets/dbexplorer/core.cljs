@@ -160,7 +160,7 @@
       ^{:key (:name db)}
       [show-database-info (reaction ((:name db) @dbs))])]])
 
-(defn handle-action! [[action m]]
+(defn handle-action! [action m]
   ;; (win/alert (str "received: " [action m]))
   (println "received: " [action m])
   (case action

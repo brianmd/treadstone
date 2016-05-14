@@ -19,7 +19,7 @@
 
 (defn send-message [action msg]
   (ws/send-transit-msg!
-   [:chatr action msg]))
+   [:chatr action {:message msg}]))
    ;; {:app :chat :action :speak :message msg}))
 
 (defn message-list []
@@ -101,31 +101,35 @@
 
 
 ;; (defn update-messages! [{:keys [message]}]
-(defn update-messages! [message]
+(defn update-messages! [m]
   ;; (swap! messages #(vec (take 10 (conj % message)))))
   ;; (win/qgrowl (str "incoming msg:" message))
   ;; (swap! messages #(vec (take 10 (conj % message)))))
   (println "in update-messages!")
-  (println message)
-  (println messages)
+  (println m)
+  (println m)
   (.play (js/Audio. "http://murphydye.com/bottleopen.mp3"))
   ;; (swap! messages #(vec (conj % message))))
-  (swap! messages conj message))
+  (swap! messages conj (:message m)))
 
 (defn notify-all-rooms! [state v])
+
+(defn handle-chatr-action! [action-name m]
+  (update-messages! m))
 
 (def chatr-actor (router/make-actor (atom {})))
 
 (router/add chatr-actor :notify-all-rooms notify-all-rooms!)
 
-(defn handle-action! [action]
+
+(defn handle-action! [[app-name action-name m]]
   (println "\n\n\nin handle-action! ")
-  (println action)
-  (case (first action)
-    :websocket (ws/handle-action! (rest action))
-    :chatr (update-messages! (rest action))
-    :stress-test (stress/handle-action! (rest action))
-    :dbexplorer (dbexplorer/handle-action! (rest action))
+  (println "app: " app-name ", action-name: " action-name ", map: " m)
+  (case app-name
+    :websocket (ws/handle-action! action-name m)
+    :chatr (handle-chatr-action! action-name m)
+    :stress-test (stress/handle-action! action-name m)
+    :dbexplorer (dbexplorer/handle-action! action-name m)
     else (println "bad action")
     ))
 

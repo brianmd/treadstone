@@ -75,40 +75,40 @@ one admin chatr window
 (defn notify-all-admins! [state [_ room-id msg]]
   )
 
-(defn add-msg! [state [_ msg]]
-  (log/info "in add-msg: " (pr-str msg))
+(defn add-msg! [state _ m]
+  (log/info "in add-msg: " (pr-str m))
   (try
-    (ws/send-to-connections (vals @ws/connections) [:chatr msg])
-    (catch Exception e (log/error (str "add-msg! caught exception: " (.getMessage e)))))
-  )
+    (ws/send-to-connections (vals @ws/connections) [:chatr :add-message m])
+    (catch Exception e (log/error (str "add-msg! caught exception: " (.getMessage e))))))
 
-(defn notify-all-rooms! [state [_ msg]]
-  (log/info "in notify-all-rooms " msg)
+(defn notify-all-rooms! [state _ m]
+  (log/info "in notify-all-rooms " m)
   (try
-    (ws/send-to-connections (vals @ws/connections) msg)
+    (ws/send-to-connections (vals @ws/connections) m)
     (catch Exception e (log/error (str "notify-all-rooms! caught exception: " (.getMessage e)))))
   )
-
-
-(defonce chatr-actor (r/make-actor (atom {:rooms {}
-                                          :people {}})))
 
 (defn request-help [state v]
   (let [room (make-room state v)]
     (notify-all-admins! state room)))
 
-(add chatr-actor :add-msg add-msg!)
+(defn create-actor [actor-name]
+  (let [actor (r/make-router actor-name
+                                   (atom {:rooms {}
+                                          :people {}}))]
+    (add actor :add-msg add-msg!)
 
-(add chatr-actor :request-help identity)
-(add chatr-actor :make-room identity)   ;; [:make-room [who-to-invite ...] [who-to-auto-open ...(?)]]
-(add chatr-actor :inactive-room identity)
-(add chatr-actor :close-room identity)
-(add chatr-actor :notify-room identity)
-(add chatr-actor :notify-all-rooms notify-all-rooms!)
-(add chatr-actor :add-connection identity)
-(add chatr-actor :remove-connection identity)
-(add chatr-actor :room-list identity)
-(add chatr-actor :rooms-waiting-for-outbound identity)
+    (add actor :request-help identity)
+    (add actor :make-room identity)   ;; [:make-room [who-to-invite ...] [who-to-auto-open ...(?)]]
+    (add actor :inactive-room identity)
+    (add actor :close-room identity)
+    (add actor :notify-room identity)
+    (add actor :notify-all-rooms notify-all-rooms!)
+    (add actor :add-connection identity)
+    (add actor :remove-connection identity)
+    (add actor :room-list identity)
+    (add actor :rooms-waiting-for-outbound identity)
+    actor))
 
 
 (println "done loading murphydye.websockets.chatr")

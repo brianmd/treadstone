@@ -12,12 +12,12 @@
   (ws/send-transit-msg! msg))
 ;; [:stress-test action msg]))
 
-(defn handle-action! [[action m]]
+(defn handle-action! [action-name m]
   ;; (win/alert [action m])
-  (case action
+  (case action-name
     :iteration (send-message [:stress-test :received m])
     :finished (win/static-alert (select-keys m [:missing :latency]))
-    (win/growl {:message [:stress-test-error m] :delay :sticky :status :error})))
+    (win/growl {:message [:stress-test-error action-name m] :delay :sticky :status :error})))
 
 (defn start-stress-test [num-threads num-iterations]
   (let [client-id (swap! client-seq-num inc)]
