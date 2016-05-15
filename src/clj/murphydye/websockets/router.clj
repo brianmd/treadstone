@@ -42,7 +42,8 @@
 
 
 
-(defonce root-router (make-router "root" (atom {:connections {}})))
+;; (defonce root-router (make-router "root" (atom {:connections {}})))
+(defonce root-router (atom (make-router "root" (atom {:connections {}}))))
 
 ;; see timer.clj for example
 

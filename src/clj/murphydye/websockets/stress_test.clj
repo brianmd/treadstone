@@ -8,7 +8,7 @@
             [clojure.set :refer [difference]]
 
             [murphydye.utils.core :refer :all]
-            [murphydye.websockets.router :as r :refer [add dispatch]]
+            [murphydye.websockets.router :as r :refer [add]]
             [murphydye.websockets.core :as ws]
             ))
 

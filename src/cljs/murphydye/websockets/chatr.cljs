@@ -100,6 +100,19 @@
    ])
 
 
+
+(defn new-client-window [f m]
+  (let [win-id (win/new-window f m)]
+    (ws/new-client {:win-id win-id})
+    ))
+
+(defn open-chatr! [m]
+  (new-client-window chatr-component {:title "Summit Chat" :x 50 :y 100 :width 400 :height 400}))
+
+(defn open-admin-chatr! [m]
+  (win/new-window chatr-outbound-component {:title "Outbound Chatr" :x 50 :y 100 :width 400 :height 400})
+  )
+
 ;; (defn update-messages! [{:keys [message]}]
 (defn update-messages! [m]
   ;; (swap! messages #(vec (take 10 (conj % message)))))
@@ -115,7 +128,12 @@
 (defn notify-all-rooms! [state v])
 
 (defn handle-chatr-action! [action-name m]
-  (update-messages! m))
+  (println action-name m)
+  (case action-name
+    :add-message (update-messages! m)
+    :open-chatr (open-chatr! m)
+    :open-admin-chatr (open-admin-chatr! m)
+    ))
 
 (def chatr-actor (router/make-actor (atom {})))
 
@@ -126,7 +144,7 @@
   (println "\n\n\nin handle-action! ")
   (println "app: " app-name ", action-name: " action-name ", map: " m)
   (case app-name
-    :websocket (ws/handle-action! action-name m)
+    :global (ws/handle-action! action-name m)
     :chatr (handle-chatr-action! action-name m)
     :stress-test (stress/handle-action! action-name m)
     :dbexplorer (dbexplorer/handle-action! action-name m)

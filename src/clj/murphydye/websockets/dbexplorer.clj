@@ -6,12 +6,12 @@
             [clojure.java.jdbc :as j]
 
             [murphydye.utils.core :refer :all]
-            [murphydye.websockets.router :as r :refer [add dispatch]]
+            [murphydye.websockets.router :as r :refer [add]]
+            [murphydye.websockets.core :as ws]
             [murphydye.websockets.dbexplorer-dbs :as db-env]
             ;; [summit.step.restapi :as restapi]
             ;; [summit.db.step :refer [get-golden-product]]
 
-            [murphydye.websockets.core :as ws]
             [clojure.tools.logging :as log]))
 
 "

@@ -4,6 +4,7 @@
             [immutant.web.async :as async]
             [cognitect.transit :as transit]
 
+            [murphydye.utils.core :as utils]
             [murphydye.websockets.router :as r :refer [add dispatch]]
             [murphydye.websockets.router :as r]
             )
@@ -19,11 +20,6 @@
 (defonce connection-seq-num (atom 0))
 (defonce customer-seq-num (atom 0))
 (defonce client-seq-num (atom 0))
-
-(defn websockets-info [router]
-  {:router router
-   :connections (atom {})
-   })
 
 (defn make-customer []
   (let [seq-num (swap! customer-seq-num inc)]
@@ -59,6 +55,9 @@
 
 (defn send-to-connection [conn msg]
   (async/send! (:channel conn) (msg->transit msg)))
+
+(defn send-to-self [msg]
+  (send-to-connection *connection* msg))
 
 (defn send-to-connections [connections msg]
   (doseq [conn connections]
@@ -99,7 +98,7 @@
       ;; (async/send! channel (msg->transit {:message "got it"}))
       (binding [*connection* connection]
         (log/info "msg" msg)
-        (r/dispatch r/root-router message))
+        (r/dispatch @r/root-router message))
       ;; (doseq [conn (vals @connections)]
       ;;   (async/send! (:channel conn) message))
       )
@@ -140,13 +139,6 @@
 (defn handle-new-client [])
 
 
-(defn create-actor [actor-name router]
-  (let [actor (r/make-router actor-name
-                                   (atom (websockets-info router)))]
-    (add actor :new-client (fn [& args] (println "in websocket-actor" " new-client:" )))
-    actor
-    ))
-
 (log/info "done loading websockets.cljs")
 
 
@@ -154,3 +146,9 @@
 (log/info "(in-ns 'treadstone.core)")
 (log/info "(-main)")
 
+
+(utils/examples
+ (send-to-connections (vals @connections) [:chatr :add-message {:message (str (utils/now))}])
+ (send-to-connections (vals @connections) [:global :notify {:message (str (utils/now))}])
+ (send-to-connections (vals @connections) [:chatr :open-chatr {:message (str (utils/now))}])
+ )

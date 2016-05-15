@@ -5,7 +5,7 @@
             [immutant.web.async :as async]
             [cognitect.transit :as transit]
 
-            [murphydye.websockets.router :as r :refer [add dispatch]]
+            [murphydye.websockets.router :as r :refer [add]]
             [murphydye.websockets.core :as ws]
             ))
 
@@ -88,6 +88,12 @@ one admin chatr window
     (catch Exception e (log/error (str "notify-all-rooms! caught exception: " (.getMessage e)))))
   )
 
+(defn request-admin-chatr! [state _ m]
+  (ws/send-to-self [:chatr :open-admin-chatr {}]))
+
+(defn request-chatr! [state _ m]
+  (ws/send-to-self [:chatr :open-chatr {}]))
+
 (defn request-help [state v]
   (let [room (make-room state v)]
     (notify-all-admins! state room)))
@@ -108,6 +114,8 @@ one admin chatr window
     (add actor :remove-connection identity)
     (add actor :room-list identity)
     (add actor :rooms-waiting-for-outbound identity)
+    (add actor :request-admin-chatr request-admin-chatr!)
+    (add actor :request-chatr request-chatr!)
     actor))
 
 
