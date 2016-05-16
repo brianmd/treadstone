@@ -1,4 +1,5 @@
 (ns murphydye.websockets.chatr
+  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [reagent.core :as r]
             [murphydye.websockets.core :as ws]
             [murphydye.websockets.stress-test :as stress]
@@ -17,18 +18,26 @@
 (defn new-room [action]
   )
 
-(defn send-message [action msg]
+(defn send-message [action m]
+  (println "send-message " action m)
   (ws/send-transit-msg!
-   [:chatr action {:message msg}]))
+   [:chatr action m]))
    ;; {:app :chat :action :speak :message msg}))
 
-(defn message-list []
+;; (defn message-list []
+;;   [:ul
+;;    (for [[i message] (map-indexed vector (reverse @messages))]
+;;      ^{:key i}
+;;      [:li message])])
+(defn message-list [m]
+  (println "in message-list")
+  (println m)
   [:ul
-   (for [[i message] (map-indexed vector (reverse @messages))]
+   (for [[i message] (map-indexed vector (reverse (:messages @m)))]
      ^{:key i}
      [:li message])])
 
-(defn message-input []
+(defn message-input [m]
   (let [value (r/atom nil)]
     (.log js/console "new message-input")
     (fn []
@@ -42,7 +51,9 @@
         :on-key-down
         #(when (= (.-keyCode %) 13)
            (.log js/console (str "submitting:" @value))
-           (send-message :add-msg @value)
+           (println "rooms" rooms)
+           (println @m)
+           (send-message :add-msg {:room-id (:id @m) :message @value})
            (reset! value nil))}])))
 
 (defn add-row [click-fn content]
@@ -80,7 +91,7 @@
    ;;   "somebody"]]
    ])
 
-(defn chatr-component []
+(defn chatr-component [m]
   [:div.container
    [:div.row
     [:div.col-md-12
@@ -93,10 +104,10 @@
      ]]
    [:div.row
     [:div.col-sm-6
-     [message-input]]]
+     [message-input m]]]
    [:div.row
     [:div.col-sm-6
-     [message-list]]]
+     [message-list m]]]
    ])
 
 
@@ -107,23 +118,22 @@
     ))
 
 (defn open-chatr! [m]
-  (new-client-window chatr-component {:title "Summit Chat" :x 50 :y 100 :width 400 :height 400}))
+  (println "open-chatr!:" m)
+  (new-client-window (chatr-component (reaction (@rooms (:room-id m)))) {:title "Summit Chat" :x 50 :y 100 :width 400 :height 400}))
 
 (defn open-admin-chatr! [m]
   (win/new-window chatr-outbound-component {:title "Outbound Chatr" :x 50 :y 100 :width 400 :height 400})
   )
 
-;; (defn update-messages! [{:keys [message]}]
+(defn update-room! [m]
+  (swap! rooms assoc (:id m) m))
+
 (defn update-messages! [m]
-  ;; (swap! messages #(vec (take 10 (conj % message)))))
-  ;; (win/qgrowl (str "incoming msg:" message))
-  ;; (swap! messages #(vec (take 10 (conj % message)))))
   (println "in update-messages!")
   (println m)
-  (println m)
   (.play (js/Audio. "http://murphydye.com/bottleopen.mp3"))
-  ;; (swap! messages #(vec (conj % message))))
-  (swap! messages conj (:message m)))
+  (let [id (:room-id m)]
+    (swap! rooms assoc-in [id :messages] (conj (get-in @rooms [id :messages]) (:message m)))))
 
 (defn notify-all-rooms! [state v])
 
@@ -133,6 +143,7 @@
     :add-message (update-messages! m)
     :open-chatr (open-chatr! m)
     :open-admin-chatr (open-admin-chatr! m)
+    :update-room (update-room! m)
     ))
 
 (def chatr-actor (router/make-actor (atom {})))

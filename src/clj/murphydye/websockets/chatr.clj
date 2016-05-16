@@ -5,10 +5,117 @@
             [immutant.web.async :as async]
             [cognitect.transit :as transit]
 
+            [murphydye.utils.core :as utils]
             [murphydye.websockets.router :as r :refer [add]]
             [murphydye.websockets.core :as ws]
             ))
 
+(defonce rooms-seq-num (atom 0))
+(defonce message-seq-num (atom 0))
+;; (defonce rooms (atom {}))
+
+(defrecord RoomConnectors [room-id remote-id])
+(defrecord Room [id status name connection-ids messages owner])
+(defrecord Message [id sent-by-connection-id sent-time message])
+;; ;status:  :permanent :waiting :assisting :disconnected :closed
+
+(defn make-room [connection]
+  (let [id (swap! rooms-seq-num inc)
+        room (->Room id :waiting (str "room-" id) [(:id connection)] [] nil)]
+    room))
+;; (make-room {:id 3})
+
+
+(defn notify-room! [state [_ room-id msg]]
+  )
+
+(defn notify-all-admins! [state [_ room-id msg]]
+  )
+
+(defn send-add-message
+  ([m] (fn [conn] (send-add-message conn m)))
+  ([conn m]
+   (println "send-add-message:" m)
+   (try
+     (ws/send-to-connection conn [:chatr :add-message m])
+     (catch Exception e (log/error (str "send-add-message caught exception: " (.getMessage e)))))
+   ))
+
+
+
+
+(defn connection-by-id [id]
+  (println "\n\nconnections" @ws/connections "\n\n")
+  (first (filter #(= id (:id %)) (vals @ws/connections))))
+
+
+
+
+(defn add-msg! [state _ m]
+  (log/info "in add-msg: " (pr-str m))
+  (println "\n\nstate:" state)
+  (println "m:" m)
+  (let [ids (get-in @state [:rooms (:room-id m) :connection-ids])
+  ;; (let [ids (:connection-ids state)
+        conns (map #(connection-by-id %) ids)]
+    (println "ids:" ids)
+    (println "conns:" conns)
+    (utils/map! (send-add-message m) conns)))
+  ;; (map! #(ws/send-to-connection (@ws/connections %) [:chatr :add-message m])
+  ;;       (try
+  ;;         (ws/send-to-connections (vals @ws/connections) [:chatr :add-message m])
+  ;;         (catch Exception e (log/error (str "add-msg! caught exception: " (.getMessage e)))))))
+
+(defn notify-all-rooms! [state _ m]
+  (log/info "in notify-all-rooms " m)
+  (try
+    (ws/send-to-connections (vals @ws/connections) m)
+    (catch Exception e (log/error (str "notify-all-rooms! caught exception: " (.getMessage e)))))
+  )
+
+(defn request-admin-chatr! [state _ m]
+  (ws/send-to-self [:chatr :open-admin-chatr {}]))
+
+(defn request-chatr! [state _ m]
+  (println "in request-chatr!" m)
+  (let [room (make-room ws/*connection*)
+        room-id (:id room)]
+    (println "\n\nroom:" room ", " room-id "\n\n")
+    (println "state" state "\n\n")
+    (swap! state assoc-in [:rooms room-id] room)
+    (println "state 2:" state "\n\n")
+    (println "send update-room")
+    (ws/send-to-self [:chatr :update-room room])
+    (println "send open-chatr")
+    (ws/send-to-self [:chatr :open-chatr {:room-id room-id}])
+    ))
+
+(defn request-help [state v]
+  (let [room (make-room state v)]
+    (notify-all-admins! state room)))
+
+(defn create-actor [actor-name]
+  (let [actor (r/make-router actor-name
+                                   (atom {:rooms {}
+                                          :people {}}))]
+    (add actor :add-msg add-msg!)
+
+    (add actor :request-help identity)
+    (add actor :make-room identity)   ;; [:make-room [who-to-invite ...] [who-to-auto-open ...(?)]]
+    (add actor :inactive-room identity)
+    (add actor :close-room identity)
+    (add actor :notify-room identity)
+    (add actor :notify-all-rooms notify-all-rooms!)
+    (add actor :add-connection identity)
+    (add actor :remove-connection identity)
+    (add actor :room-list identity)
+    (add actor :rooms-waiting-for-outbound identity)
+    (add actor :request-admin-chatr request-admin-chatr!)
+    (add actor :request-chatr request-chatr!)
+    actor))
+
+
+(println "done loading murphydye.websockets.chatr")
 "     server side
 one web socket handler per server
     has many connections
@@ -57,66 +164,3 @@ one admin chatr window
    note: admin chatr has no clients or messages
 "
 
-(defonce rooms-seq-num (atom 0))
-(defonce message-seq-num (atom 0))
-
-(defrecord RoomConnectors [room-id remote-id])
-(defrecord Room [id name connectors owner])
-(defn make-room [connection]
-  (let [id (swap! rooms-seq-num inc)
-        room (->Room id (str "room-" id) [(:id connection)] nil)]
-    room))
-;; (make-room {:id 3})
-
-
-(defn notify-room! [state [_ room-id msg]]
-  )
-
-(defn notify-all-admins! [state [_ room-id msg]]
-  )
-
-(defn add-msg! [state _ m]
-  (log/info "in add-msg: " (pr-str m))
-  (try
-    (ws/send-to-connections (vals @ws/connections) [:chatr :add-message m])
-    (catch Exception e (log/error (str "add-msg! caught exception: " (.getMessage e))))))
-
-(defn notify-all-rooms! [state _ m]
-  (log/info "in notify-all-rooms " m)
-  (try
-    (ws/send-to-connections (vals @ws/connections) m)
-    (catch Exception e (log/error (str "notify-all-rooms! caught exception: " (.getMessage e)))))
-  )
-
-(defn request-admin-chatr! [state _ m]
-  (ws/send-to-self [:chatr :open-admin-chatr {}]))
-
-(defn request-chatr! [state _ m]
-  (ws/send-to-self [:chatr :open-chatr {}]))
-
-(defn request-help [state v]
-  (let [room (make-room state v)]
-    (notify-all-admins! state room)))
-
-(defn create-actor [actor-name]
-  (let [actor (r/make-router actor-name
-                                   (atom {:rooms {}
-                                          :people {}}))]
-    (add actor :add-msg add-msg!)
-
-    (add actor :request-help identity)
-    (add actor :make-room identity)   ;; [:make-room [who-to-invite ...] [who-to-auto-open ...(?)]]
-    (add actor :inactive-room identity)
-    (add actor :close-room identity)
-    (add actor :notify-room identity)
-    (add actor :notify-all-rooms notify-all-rooms!)
-    (add actor :add-connection identity)
-    (add actor :remove-connection identity)
-    (add actor :room-list identity)
-    (add actor :rooms-waiting-for-outbound identity)
-    (add actor :request-admin-chatr request-admin-chatr!)
-    (add actor :request-chatr request-chatr!)
-    actor))
-
-
-(println "done loading murphydye.websockets.chatr")
