@@ -16,7 +16,7 @@
 
 (defrecord RoomConnectors [room-id remote-id])
 (defrecord Room [id status name connection-ids messages owner])
-(defrecord Message [id sent-by-connection-id sent-time message])
+(defrecord Message [id sent-by-connection-id sent-time text])
 ;; ;status:  :permanent :waiting :assisting :disconnected :closed
 
 (defn make-room [connection]
@@ -25,6 +25,9 @@
     room))
 ;; (make-room {:id 3})
 
+(defn make-message [connection msg]
+  (let [conn-id (:id connection)]
+    (->Message (swap! message-seq-num inc) conn-id (java.util.Date.) msg)))
 
 (defn notify-room! [state [_ room-id msg]]
   )
@@ -50,21 +53,25 @@
 
 
 
-
 (defn add-msg! [state _ m]
   (log/info "in add-msg: " (pr-str m))
   (println "\n\nstate:" state)
   (println "m:" m)
   (let [ids (get-in @state [:rooms (:room-id m) :connection-ids])
   ;; (let [ids (:connection-ids state)
-        conns (map #(connection-by-id %) ids)]
+        conns (map #(connection-by-id %) (set ids))
+        text (:message m)
+        msg (make-message ws/*connection* (:message m))
+        m (assoc m :message msg)]
+    (swap! state update-in [:rooms (:room-id m) :messages] conj msg)
     (println "ids:" ids)
-    (println "conns:" conns)
+    (println "\n\nm:" m)
     (utils/map! (send-add-message m) conns)))
   ;; (map! #(ws/send-to-connection (@ws/connections %) [:chatr :add-message m])
   ;;       (try
   ;;         (ws/send-to-connections (vals @ws/connections) [:chatr :add-message m])
   ;;         (catch Exception e (log/error (str "add-msg! caught exception: " (.getMessage e)))))))
+
 
 (defn notify-all-rooms! [state _ m]
   (log/info "in notify-all-rooms " m)
@@ -80,14 +87,26 @@
   (println "in request-chatr!" m)
   (let [room (make-room ws/*connection*)
         room-id (:id room)]
-    (println "\n\nroom:" room ", " room-id "\n\n")
-    (println "state" state "\n\n")
     (swap! state assoc-in [:rooms room-id] room)
-    (println "state 2:" state "\n\n")
-    (println "send update-room")
-    (ws/send-to-self [:chatr :update-room room])
-    (println "send open-chatr")
+    (ws/send-to-connections (vals @ws/connections) [:chatr :update-room room])
     (ws/send-to-self [:chatr :open-chatr {:room-id room-id}])
+    ))
+
+(defn connect-to-room! [state _ m]
+  (println "in connect-to-room!")
+  (println m)
+  (swap! state update-in [:rooms (:room-id m) :connection-ids] conj (:id ws/*connection*))
+  (println "\n\nstate" state)
+  (let [room (get-in @state [:rooms (:room-id m)])
+        room-id (:id room)
+        ]
+    (println "room" room)
+    (ws/send-to-self [:chatr :update-room room])
+    (println "updated room")
+    (ws/send-to-self [:chatr :open-chatr {:room-id room-id}])
+    (println "opened chatr")
+    (add-msg! state nil {:room-id room-id :message "How may we help you?"})
+    (println "added msg")
     ))
 
 (defn request-help [state v]
@@ -112,6 +131,7 @@
     (add actor :rooms-waiting-for-outbound identity)
     (add actor :request-admin-chatr request-admin-chatr!)
     (add actor :request-chatr request-chatr!)
+    (add actor :connect-to-room connect-to-room!)
     actor))
 
 

@@ -160,10 +160,10 @@
       ^{:key (:name db)}
       [show-database-info (reaction ((:name db) @dbs))])]])
 
-(defn handle-action! [action m]
+(defn handle-action! [action-name m]
   ;; (win/alert (str "received: " [action m]))
-  (println "received: " [action m])
-  (case action
+  (println "received: " [action-name m])
+  (case action-name
     :databases (do (println m) (reset! dbs (:databases m)))
     :tables (swap! dbs assoc-in [(:dbname m) :tables] (:tables m))
     :table (swap! dbs assoc-in [(:dbname m) :data (:table-name m)] (:data m))

@@ -14,6 +14,7 @@
 
 (defonce messages (r/atom []))
 (defonce rooms (r/atom {}))
+(defonce connection-id (atom nil))
 
 (defn new-room [action]
   )
@@ -29,15 +30,16 @@
 ;;    (for [[i message] (map-indexed vector (reverse @messages))]
 ;;      ^{:key i}
 ;;      [:li message])])
-(defn message-list [m]
+(defn message-list [room]
   (println "in message-list")
-  (println m)
+  (println room)
   [:ul
-   (for [[i message] (map-indexed vector (reverse (:messages @m)))]
-     ^{:key i}
-     [:li message])])
+   ;; (for [[i message] (map-indexed vector (reverse (:messages @room)))]
+   (for [[i message] (map-indexed vector (:messages @room))]
+     ^{:key {:id message}}
+     [:li (:text message)])])
 
-(defn message-input [m]
+(defn message-input [room]
   (let [value (r/atom nil)]
     (.log js/console "new message-input")
     (fn []
@@ -52,8 +54,8 @@
         #(when (= (.-keyCode %) 13)
            (.log js/console (str "submitting:" @value))
            (println "rooms" rooms)
-           (println @m)
-           (send-message :add-msg {:room-id (:id @m) :message @value})
+           (println @room)
+           (send-message :add-msg {:room-id (:id @room) :message @value})
            (reset! value nil))}])))
 
 (defn add-row [click-fn content]
@@ -66,21 +68,37 @@
    [:div.col-xs-12 {:style {:width "100%" :background-color "#ddd" :text-align :center}}
     content]])
 
+(defn my-rooms []
+  (filter #(contains? (set (:connection-ids %)) @connection-id) (vals @rooms)))
+
+(defn unattended-rooms []
+  (filter #(if (= 1 (count (:connection-ids %))) %) (vals @rooms)))
+
+(defn open-admin-room [room]
+  (send-message :connect-to-room {:room-id (:id room)}))
+
 (defn chatr-outbound-component []
+  (println "connection-id" @connection-id)
+  (println "rooms:" @rooms)
   [:div.container-fluid
    [:div.row
     [:div.col-xs-12 {:style {:width "100%" :background-color "#ddd" :text-align :center}}
      [:b "Your Chats"]]]
+   (for [room (my-rooms)]
+     ^{:key {:id room}}
+     [add-row #(open-admin-room room) (str "connection-ids: " (:connection-ids room))])
    [add-highlighted-row [:b "Requesting Help"]]
-   [add-row #(js/alert "clicked") "conn-1"]
-   [add-row #(js/alert "clicked") [:i "conn-1"]]
-   [:div.row
-    [:div.col-md-12
-     "somebody"]]
-    [:div.row
-     [:div.col-md-12
-      "else"
-      ]]
+   (println "unattended:" (unattended-rooms))
+   (for [room (unattended-rooms)]
+     ^{:key {:id room}}
+     [add-row #(open-admin-room room) (str "connection-ids: " (:connection-ids room))])
+   ;; [:div.row
+   ;;  [:div.col-md-12
+   ;;   "somebody"]]
+   ;;  [:div.row
+   ;;   [:div.col-md-12
+   ;;    "else"
+   ;;    ]]
    ;; [:div.row
    ;;  [:div.col-md-12
    ;;   [:h2 "Unattended"]
@@ -106,7 +124,7 @@
     [:div.col-sm-6
      [message-input m]]]
    [:div.row
-    [:div.col-sm-6
+    [:div.col-sm-12
      [message-list m]]]
    ])
 
@@ -119,13 +137,15 @@
 
 (defn open-chatr! [m]
   (println "open-chatr!:" m)
-  (new-client-window (chatr-component (reaction (@rooms (:room-id m)))) {:title "Summit Chat" :x 50 :y 100 :width 400 :height 400}))
+  (new-client-window (chatr-component (reaction (@rooms (:room-id m)))) {:title "Summit Chat" :x 350 :y 100 :width 400 :height 400}))
 
 (defn open-admin-chatr! [m]
-  (win/new-window chatr-outbound-component {:title "Outbound Chatr" :x 50 :y 100 :width 400 :height 400})
+  (win/new-window chatr-outbound-component {:title "Outbound Chatr" :x 50 :y 100 :width 250 :height 400})
   )
 
 (defn update-room! [m]
+  (println "update-room!" m)
+  (if (nil? @connection-id) (reset! connection-id (first (:connection-ids m))))
   (swap! rooms assoc (:id m) m))
 
 (defn update-messages! [m]

@@ -14,6 +14,6 @@
   (start))
 
 (in-ns 'treadstone.core)
-(println "\n\nto start webserver:\n  (in-ns 'treadstone.core)\n  (-main)\n\n")
+(println "\n\nto start webserver:\n  (in-ns 'treadstone.core)\n  (-main)\n\nhttp://localhost:7777/#/about\n\n")
 
 

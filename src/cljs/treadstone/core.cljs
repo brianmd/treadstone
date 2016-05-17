@@ -37,14 +37,12 @@
 
 (defn about-page []
   [:div.container
-   [:div.row
-    [:div.col-md-12
-     "this is the story of treadstone... work in progress"]]
+   ;; [:div.row
+   ;;  [:div.col-md-12
+   ;;   "this is the story of treadstone... work in progress"]]
    [:div.row
     [:div.col-md-12
      [md-components/components]
-
-     ;; "hello"
      ]]
    ])
 
