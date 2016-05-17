@@ -77,6 +77,11 @@
 (defn open-admin-room [room]
   (send-message :connect-to-room {:room-id (:id room)}))
 
+(defn connection-name [id]
+  (if (= id @connection-id)
+    "me"
+    (str "conn-" id)))
+
 (defn chatr-outbound-component []
   (println "connection-id" @connection-id)
   (println "rooms:" @rooms)
@@ -86,27 +91,11 @@
      [:b "Your Chats"]]]
    (for [room (my-rooms)]
      ^{:key {:id room}}
-     [add-row #(open-admin-room room) (str "connection-ids: " (:connection-ids room))])
+     [add-row #(open-admin-room room) (clojure.string/join ", " (map connection-name (:connection-ids room)))])
    [add-highlighted-row [:b "Requesting Help"]]
-   (println "unattended:" (unattended-rooms))
    (for [room (unattended-rooms)]
      ^{:key {:id room}}
-     [add-row #(open-admin-room room) (str "connection-ids: " (:connection-ids room))])
-   ;; [:div.row
-   ;;  [:div.col-md-12
-   ;;   "somebody"]]
-   ;;  [:div.row
-   ;;   [:div.col-md-12
-   ;;    "else"
-   ;;    ]]
-   ;; [:div.row
-   ;;  [:div.col-md-12
-   ;;   [:h2 "Unattended"]
-   ;;   "somebody"]]
-   ;; [:div.row
-   ;;  [:div.col-md-12
-   ;;   [:h2 "Permanent"]
-   ;;   "somebody"]]
+     [add-row #(open-admin-room room) (clojure.string/join ", " (map connection-name (:connection-ids room)))])
    ])
 
 (defn chatr-component [m]
