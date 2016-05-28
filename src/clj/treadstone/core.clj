@@ -22,7 +22,7 @@
                 :start
                 (http/start
                   (-> env
-                      (assoc :handler handler/app)
+                      (assoc :host "0.0.0.0" :handler handler/app)
                       (update :port #(or (-> env :options :port) %))))
                 :stop
                 (http/stop http-server))
