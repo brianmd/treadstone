@@ -8,6 +8,8 @@
             [murphydye.websockets.stress-test :refer [stress-test-component]]
             [murphydye.websockets.dbexplorer.core :refer [dbexplorer-component]]
             [murphydye.websockets.router :as router]
+
+            [murphydye.fixed-data-table :as tbl]
             ))
 
 (defn send-message [v]
@@ -42,5 +44,9 @@
        [:input {:type "button" :value "Websocket Stress Test"
                 :on-click #(win/new-window stress-test-component {:title "Websocket Stress Test" :x 50 :y 150 :width 400 :height 200 :scrollable false})}]
 
+       [:br]
+       [:div
+        "boo hoo"
+        [tbl/table-component]]
        ])))
 

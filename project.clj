@@ -64,6 +64,7 @@
                  [org.webjars/codemirror "5.12"]
 
                  [org.clojars.frozenlock/reagent-table "0.1.3"]
+                 [cljsjs/fixed-data-table "0.6.0-1"]
 
                  [re-com "0.8.0"]
                  [re-frame "0.7.0"]
