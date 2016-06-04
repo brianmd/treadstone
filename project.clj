@@ -49,7 +49,7 @@
                  ;; [incanter "1.5.7"]
                  [clj-time "0.11.0"]
 
-
+                 [com.murphydye/utils "0.1.0-SNAPSHOT"]
 
                  ;; cljs libraries
 
