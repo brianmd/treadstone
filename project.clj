@@ -3,7 +3,7 @@
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha5"]
                  [selmer "1.0.4"]  ; references cheshire 5.5.0 json
                  [markdown-clj "0.9.87"]
                  [ring-middleware-format "0.7.0"]

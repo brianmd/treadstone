@@ -89,7 +89,7 @@ from server:
           ]
       ;; (stress-test-thread client-id conn [3 4 5])
       (map! deref futures)  ;; wait until all are done
-      (pp partitions)
+      (ppa partitions)
       (log/info (now))
       (future
         (Thread/sleep 100)
