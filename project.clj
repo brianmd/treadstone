@@ -1,7 +1,7 @@
 (defproject treadstone "0.1.0-SNAPSHOT"
 
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Test lab for building libraries"
+  :url "http://github.com/brianmd/treadstone"
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha5"]
                  [selmer "1.0.4"]  ; references cheshire 5.5.0 json
@@ -49,7 +49,7 @@
                  ;; [incanter "1.5.7"]
                  [clj-time "0.11.0"]
 
-                 [com.murphydye/utils "0.1.1"]
+                 [com.murphydye/utils "0.1.1-SNAPSHOT"]
 
                  ;; cljs libraries
 
