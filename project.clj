@@ -157,7 +157,7 @@
                   :source-paths ["env/dev/clj" "test/clj"]
                   :resource-paths ["env/dev/resources"]
                   :repl-options {:init-ns treadstone.core
-                                 :timeout 120000
+                                 :timeout 320000
                                  :nrepl-middleware
                                  [cemerick.piggieback/wrap-cljs-repl]}
                   :injections [(require 'pjstadig.humane-test-output)
